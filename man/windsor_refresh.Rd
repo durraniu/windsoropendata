@@ -1,0 +1,20 @@
+\name{windsor_refresh}
+\alias{windsor_refresh}
+\title{Fetch the live Windsor catalogue from the ArcGIS REST directory}
+\usage{
+windsor_refresh()
+}
+\value{
+A tibble in the same format as \code{\link{windsor_datasets}}.
+}
+\description{
+Queries each of the nine MapServer services under
+\code{open_data_services} with \code{?f=json}, then queries each layer and table
+for its geometry type, display field and field list. This is what
+\code{windsor_datasets(refresh = TRUE)} uses.
+}
+\examples{
+\dontrun{
+windsor_refresh()
+}
+}

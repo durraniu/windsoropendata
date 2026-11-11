@@ -1,0 +1,38 @@
+\name{windsor_get}
+\alias{windsor_get}
+\title{Read a Windsor open dataset by name}
+\usage{
+windsor_get(dataset, service = NULL, n_max = Inf, ...)
+}
+\arguments{
+\item{dataset}{Dataset name, title, alias or full REST URL. Examples:
+\code{"ward_boundaries"}, \code{"municipal_ward_boundary"}, \code{"Ward Boundaries"},
+\code{"peche_island_pathway"}, \code{"street_centreline"}. Three names are
+used by more than one service (\code{hydrant}, \code{electric_vehicle_charger}
+and \code{public_property_obstruction}); for those, add \code{service}.}
+\item{service}{Optional service name, for example \code{"boundaries"} or
+\code{"transportation"}. Required only when the dataset name is ambiguous.}
+\item{n_max}{Maximum number of features to read. Defaults to \code{Inf}
+(all features). Use a small number, for example \code{n_max = 5}, to
+preview a large layer such as \code{street_centreline}.}
+\item{...}{Passed to \code{\link[arcgislayers:arc_read]{arcgislayers::arc_read}}, for example
+\code{col_select} to read only some columns.}
+}
+\value{
+An \code{sf} object for a spatial layer, or a data frame for a table.
+Spatial data is in EPSG 26917 (NAD 1983 UTM Zone 17N), the City's
+native projection.
+}
+\description{
+Reads one dataset from the City of Windsor open data portal without
+typing its full ArcGIS REST URL. Give a short name, a title, an alias,
+or a full URL, and the package looks up the URL and reads it with
+\code{\link[arcgislayers:arc_read]{arcgislayers::arc_read}}.
+}
+\examples{
+\dontrun{
+wards <- windsor_get("ward_boundaries")
+peche <- windsor_get("peche_island_pathway")
+streets <- windsor_get("street_centreline", n_max = 5)
+}
+}

@@ -1,0 +1,32 @@
+Package: windsoropendata
+Title: Read City of Windsor Open Data in R
+Version: 0.3.0
+Authors@R: person("Umair", "Durrani", email = "umair@durrani.ca", role = c("aut", "cre"))
+Description: A thin wrapper around the 'arcgislayers' package for the City of
+    Windsor open data portal. The portal is an ArcGIS Hub site backed by the
+    City's own ArcGIS Server at mappmycity.ca. This package lists the
+    available datasets, searches them by name, and reads a dataset by its
+    short name instead of its full ArcGIS REST URL. It also reads the
+    Windsor Police Service Incident Dashboard, a separate public ArcGIS
+    FeatureServer, with windsor_police_incidents(), and live traffic
+    speeds and incidents from the TomTom Traffic API, with
+    windsor_tomtom_flow() and windsor_tomtom_incidents(), which need a
+    free TomTom API key in the TOMTOM_API_KEY environment variable.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+    arcgislayers,
+    dplyr,
+    httr2,
+    sf,
+    tibble
+Suggests:
+    ggplot2,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+URL: https://github.com/durraniu/windsoropendata, https://open-data-portal-citywindsor.hub.arcgis.com/
+BugReports: https://github.com/durraniu/windsoropendata/issues

@@ -1,0 +1,237 @@
+---
+title: "Getting started with windsoropendata"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with windsoropendata}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## What this package does
+
+The City of Windsor open data portal is an ArcGIS Hub site, backed by the
+City's own ArcGIS Server at `mappmycity.ca`. There is no Windsor specific
+R package on CRAN, so this package is a thin wrapper around
+`arcgislayers::arc_read()`. It knows the Windsor catalogue, so you do not
+have to type a full ArcGIS REST URL every time.
+
+```{r}
+library(windsoropendata)
+```
+
+## Install
+
+On Windows, install the released dependencies from CRAN first, then the
+package from GitHub:
+
+```{r, eval = FALSE}
+install.packages("arcgis")
+# install.packages("pak")
+pak::pak("durraniu/windsoropendata")
+```
+
+On Linux, the full `arcgis` metapackage can fail to compile its
+`arcgisplaces` dependency (it needs Rust and OpenSSL headers). If that
+happens, install just what this package needs:
+
+```{r, eval = FALSE}
+install.packages(c("arcgislayers", "dplyr", "httr2", "jsonlite", "tibble", "tidyr"))
+pak::pak("durraniu/windsoropendata")
+```
+
+## List what is available
+
+`windsor_datasets()` returns one row per dataset in the portal. The
+package ships with a snapshot taken on 2026-11-10, with 227 datasets
+across 9 services.
+
+```{r}
+datasets <- windsor_datasets()
+nrow(datasets)
+head(datasets[, c("dataset", "title", "service", "type", "geometry_type")])
+```
+
+`windsor_services()` summarises the 9 services:
+
+```{r}
+windsor_services()
+```
+
+To get the live catalogue instead of the snapshot, use
+`windsor_datasets(refresh = TRUE)`. If the live fetch fails, you get the
+snapshot back with a warning.
+
+## Find a dataset
+
+`windsor_search()` matches on a word in the dataset name, title or
+service. It matches on a word boundary, so `"ward"` finds the ward
+boundary but not `forward_sortation_area`.
+
+```{r}
+windsor_search("ward")
+windsor_search("trail")
+windsor_search("bike", service = "transportation")
+```
+
+## Read a dataset by name
+
+`windsor_get()` looks up the short name and reads it with
+`arcgislayers::arc_read()`. Spatial data comes back as an `sf` object in
+EPSG 26917 (NAD 1983 UTM Zone 17N), the City's native projection.
+
+### Ward boundaries
+
+```{r}
+wards <- windsor_get("ward_boundaries")
+nrow(wards)
+names(wards)
+wards[, c("ward_number", "councillor_name")]
+```
+
+You can use the exact layer name, the title, or an alias. All three of
+these read the same layer:
+
+```{r, eval = FALSE}
+windsor_get("municipal_ward_boundary")
+windsor_get("Ward Boundaries")
+windsor_get("wards")
+```
+
+### Peche Island Pathway
+
+```{r}
+peche <- windsor_get("peche_island_pathway")
+nrow(peche)
+peche[, c("trail_name", "trail_type", "status", "Shape_Length")]
+sum(peche$Shape_Length)
+```
+
+The three segments total about 2,501 metres.
+
+### Street centreline, preview first
+
+The street centreline layer is large, with 6,312 features. Preview it
+with `n_max` before reading the whole thing:
+
+```{r}
+streets <- windsor_get("street_centreline", n_max = 5)
+streets[, c("street_name", "from_street", "to_street", "speed_limit", "lane_count")]
+```
+
+Then read it in full when you need it:
+
+```{r, eval = FALSE}
+streets <- windsor_get("street_centreline")
+```
+
+## Plot what you read
+
+The result is an ordinary `sf` object, so it works with `ggplot2`,
+`sf::plot()` and the rest of the tidyverse.
+
+```{r, eval = FALSE}
+library(ggplot2)
+ggplot(wards) +
+  geom_sf(aes(fill = factor(ward_number))) +
+  theme_minimal()
+```
+
+## Windsor Police incidents
+
+`windsor_police_incidents()` reads police-reported incidents from the
+Windsor Police Service Incident Dashboard. This is a separate source
+from the City open data portal: a public ArcGIS FeatureServer hosted by
+Windsor Police Service, not one of the 227 datasets above. It covers
+Windsor and Amherstburg for the last two years. Locations are
+anonymised to the block, and motor vehicle collisions are not included.
+
+```{r, eval = FALSE}
+incidents <- windsor_police_incidents(n_max = 5)
+traffic <- windsor_police_incidents(category = "Traffic", n_max = 5)
+recent <- windsor_police_incidents(start_date = "2026-11-01", end_date = "2026-11-10")
+```
+
+`category` takes one or more of the 17 categories from
+`windsor_police_categories()`. Dates are inclusive, and are
+interpreted in the America/Toronto timezone, so `start_date =
+"2026-11-01"` means incidents on 1 November in Windsor, not 1 November
+in UTC. The result is an `sf` object in EPSG 26917, sorted by incident
+date and time, so it joins directly to the ward boundaries above.
+
+## Live traffic speeds and incidents from TomTom
+
+The City portal publishes no measured speed or crash data. For live
+measured speeds and incidents, `windsor_tomtom_flow()` and
+`windsor_tomtom_incidents()` use the TomTom Traffic API instead. This
+is a separate commercial source, not part of the City portal, and it
+needs a free TomTom API key. Get one at
+<https://developer.tomtom.com/> (no credit card), then set it:
+
+```{r, eval = FALSE}
+Sys.setenv(TOMTOM_API_KEY = "your-key")
+```
+
+`windsor_tomtom_flow()` returns the current speed and the free flow
+speed for the road segment closest to each point, in km/h, with a
+confidence score. Each point costs one TomTom API call, so keep the
+number of points small when polling often.
+
+```{r, eval = FALSE}
+# Downtown Windsor, Ouellette Ave at Wyandotte St
+windsor_tomtom_flow(lat = 42.318, lon = -83.039)
+
+# Several points at once
+windsor_tomtom_flow(
+  lat = c(42.318, 42.300, 42.280),
+  lon = c(-83.039, -83.000, -82.970)
+)
+```
+
+`windsor_tomtom_incidents()` returns all current traffic incidents
+in Windsor by default, as an `sf` object in EPSG 4326, with one row
+per incident, a point or line geometry, and the delay and description.
+Use `category` to filter, for example `"Accident"`, and see
+`windsor_tomtom_categories()` for the full list of 13 categories.
+`windsor_tomtom_bbox()` returns the default Windsor bounding box.
+
+```{r, eval = FALSE}
+windsor_tomtom_incidents()
+windsor_tomtom_incidents(category = "Accident")
+windsor_tomtom_categories()
+```
+
+TomTom incidents are live traffic events, not police collision
+records, and TomTom data is not stored or redistributed by this
+package.
+
+## Ambiguous names
+
+Three names are used by more than one service: `hydrant`,
+`electric_vehicle_charger` and `public_property_obstruction`. For those,
+add `service`:
+
+```{r, eval = FALSE}
+windsor_get("hydrant", service = "infrastructure")
+windsor_get("hydrant", service = "governmentservices")
+```
+
+If you give an ambiguous name without a service, the error lists the
+matches so you can pick one.
+
+## Where the data comes from
+
+* Portal: <https://open-data-portal-citywindsor.hub.arcgis.com/>
+* REST services: <https://mappmycity.ca/arcgis/rest/services/open_data_services>
+* Licence: the datasets are listed under Creative Commons Attribution
+  4.0 International (CC BY 4.0).
+
+`mappmycity.ca` is the City of Windsor's own ArcGIS Server, so the city
+is in the server name, not in the URL path. A different city's server
+with the same path would return that city's data.
