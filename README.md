@@ -5,8 +5,7 @@
 
 <img src="man/figures/logo.png" align="right" height="200" alt="windsoropendata hex sticker: Windsor ward map in a dark blue hexagon" />
 
-Read City of Windsor open data in R, without typing a full ArcGIS REST
-URL every time.
+Get data from [City of Windsor Open Data Portal](https://open-data-portal-citywindsor.hub.arcgis.com/) in R.
 
 The City of Windsor open data portal is an ArcGIS Hub site, backed by the
 City's own ArcGIS Server at `mappmycity.ca`. This package is a thin
@@ -18,15 +17,6 @@ so you list datasets, search them by name, and read one by its short name.
 ```r
 install.packages("arcgis")
 # install.packages("pak")
-pak::pak("durraniu/windsoropendata")
-```
-
-On Linux, the full `arcgis` metapackage can fail to compile its
-`arcgisplaces` dependency (it needs Rust and OpenSSL headers). If that
-happens, install just what this package needs:
-
-```r
-install.packages(c("arcgislayers", "dplyr", "httr2", "jsonlite", "tibble", "tidyr"))
 pak::pak("durraniu/windsoropendata")
 ```
 
@@ -51,7 +41,7 @@ streets <- windsor_get("street_centreline", n_max = 5)
 Spatial data comes back as an `sf` object in EPSG 26917 (NAD 1983 UTM
 Zone 17N), the City's native projection.
 
-Police incidents are a separate source, from the Windsor Police Service
+Police incidents are obtained from the Windsor Police Service
 Incident Dashboard, not the City portal. Read them with a category and
 date filter:
 
@@ -67,8 +57,7 @@ See the getting started vignette for the full walkthrough:
 
 ## Live traffic speeds and incidents, from TomTom
 
-The City portal publishes no measured speed or crash data, so live
-speeds and incidents come from the TomTom Traffic API instead. Get a
+Live speeds and incidents come from the TomTom Traffic API. Get a
 free key at https://developer.tomtom.com/ (no credit card), then set
 it once per session, or in `~/.Renviron`:
 
@@ -88,8 +77,7 @@ windsor_tomtom_bbox()
 ```
 
 Each point in `windsor_tomtom_flow()` costs one TomTom API call, and
-each `windsor_tomtom_incidents()` call costs one call, so keep polling
-loops modest on the free tier. Results are `sf` objects in EPSG 4326.
+each `windsor_tomtom_incidents()` call costs one call. Results are `sf` objects in EPSG 4326.
 TomTom incidents are live traffic events, not police collision records.
 
 ## Data sources

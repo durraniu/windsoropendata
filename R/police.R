@@ -24,8 +24,7 @@
 #'   interpreted in the America/Toronto timezone. If `NULL`, no date
 #'   filter is applied.
 #' @param n_max Maximum number of incidents to return. Defaults to `Inf`
-#'   (all incidents, about 38,000 for the full two years as of
-#'   2026-11-10). Use a small number, for example `n_max = 5`, to
+#'   (all incidents). Use a small number, for example `n_max = 5`, to
 #'   preview the data. The full download takes about 10 seconds.
 #' @param ... Passed to [arcgislayers::arc_read()], for example
 #'   `col_select` to read only some columns.
