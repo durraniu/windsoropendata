@@ -30,7 +30,7 @@ Use 14 or higher for local streets.}
 \item{unit}{Speed unit, \code{"kmph"} (default) or \code{"mph"}.}
 }
 \value{
-An \code{sf} object with point geometry at the queried points,
+An \code{sf} object with geometry at the queried points,
 in EPSG 4326 (WGS 84). Columns include \code{lat}, \code{lon},
 \code{current_speed}, \code{free_flow_speed}, \code{speed_ratio}
 (\code{current_speed / free_flow_speed}), \code{current_travel_time},

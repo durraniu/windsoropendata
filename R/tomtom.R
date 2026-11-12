@@ -98,7 +98,7 @@ windsor_tomtom_categories <- function() {
 #'   Use 14 or higher for local streets.
 #' @param unit Speed unit, `"kmph"` (default) or `"mph"`.
 #'
-#' @return An `sf` object with point geometry at the queried points,
+#' @return An `sf` object with geometry at the queried points,
 #'   in EPSG 4326 (WGS 84). Columns include `lat`, `lon`,
 #'   `current_speed`, `free_flow_speed`, `speed_ratio`
 #'   (`current_speed / free_flow_speed`), `current_travel_time`,
@@ -140,7 +140,9 @@ windsor_tomtom_flow <- function(lat, lon = NULL, key = NULL, zoom = 10, unit = c
     rows[[i]] <- .parse_tomtom_flow(resp, pts$lat[i], pts$lon[i], queried_at)
   }
   out <- dplyr::bind_rows(rows)
-  .tomtom_as_sf(out, lon_col = "lon", lat_col = "lat")
+  geoms <- sf::st_sfc(out$geometry, crs = 4326)
+  out$geometry <- NULL
+  sf::st_sf(out, geometry = geoms)
 }
 
 #' Live traffic incidents in Windsor
@@ -340,6 +342,14 @@ windsor_tomtom_incidents <- function(bbox = NULL, key = NULL, category = NULL,
   d <- resp$flowSegmentData %||% list()
   current <- .tomtom_num(d$currentSpeed)
   free <- .tomtom_num(d$freeFlowSpeed)
+  seg <- d$coordinates$coordinate
+  geom <- if (is.null(seg) || length(seg) < 2) {
+    sf::st_point(c(lon, lat))  # no usable segment, fall back to the query point
+  } else {
+    m <- do.call(rbind, lapply(seg, function(p) c(p$longitude, p$latitude)))
+    sf::st_linestring(m)
+  }
+
   tibble::tibble(
     lat = lat,
     lon = lon,
@@ -352,7 +362,8 @@ windsor_tomtom_incidents <- function(bbox = NULL, key = NULL, category = NULL,
     confidence = .tomtom_num(d$confidence),
     frc = d$frc %||% NA_character_,
     road_closure = .tomtom_lgl(d$roadClosure),
-    queried_at = queried_at
+    queried_at = queried_at,
+    geometry = list(geom)
   )
 }
 
